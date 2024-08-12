@@ -1,10 +1,3 @@
-//
-//  Forecast.json
-//  WeatherApp
-//
-//  Created by Admin on 8/12/24.
-//
-
 {
     "coord": {
         "lon": -74.006,
@@ -32,6 +25,7 @@
     "visibility": 10000,
     "wind": {
         "speed": 4.12,
+        "gust": 17,
         "deg": 220
     },
     "clouds": {
