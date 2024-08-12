@@ -9,28 +9,77 @@ import XCTest
 @testable import WeatherApp
 
 final class WeatherAppTests: XCTestCase {
-
-    override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
+    func testFetchForecastDefault() async {
+        let viewModel = ForecastViewModel(respository: MockForecastRepository())
+        await viewModel.fetchForecast()
+        XCTAssertEqual(viewModel.isLoading, false, "isLoading should be false")
+        XCTAssertNotNil(viewModel.response, "response should not be nil")
+        XCTAssertEqual(viewModel.response?.sys.country, "US", "Country is not US")
+        XCTAssertEqual(viewModel.response?.name, "New York", "City is not New York")
     }
-
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+    
+    func testFetchForecastWitCity() async {
+        let viewModel = ForecastViewModel(respository: MockForecastRepository())
+        await viewModel.fetchForecast(for: "New York")
+        XCTAssertEqual(viewModel.isLoading, false, "isLoading should be false")
+        XCTAssertNotNil(viewModel.response, "response should not be nil")
+        XCTAssertEqual(viewModel.response?.sys.country, "US", "Country is not US")
+        XCTAssertEqual(viewModel.response?.name, "New York", "City is not New York")
     }
-
-    func testExample() throws {
-        // This is an example of a functional test case.
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
-        // Any test you write for XCTest can be annotated as throws and async.
-        // Mark your test throws to produce an unexpected failure when your test encounters an uncaught error.
-        // Mark your test async to allow awaiting for asynchronous code to complete. Check the results with assertions afterwards.
+    
+    func testFetchForecastWitCoordinates() async {
+        let viewModel = ForecastViewModel(respository: MockForecastRepository())
+        await viewModel.fetchForecast(for: 40.7143, longitude: -74.006)
+        XCTAssertEqual(viewModel.isLoading, false, "isLoading should be false")
+        XCTAssertNotNil(viewModel.response, "response should not be nil")
+        XCTAssertEqual(viewModel.response?.sys.country, "US", "Country is not US")
+        XCTAssertEqual(viewModel.response?.name, "New York", "City is not New York")
     }
+    
+    func testFetchForecastError() async {
+        let viewModel = ForecastViewModel(respository: MockFailureForecastRepository())
+        await viewModel.fetchForecast(for: "New York")
+        XCTAssertEqual(viewModel.isLoading, false, "isLoading should be false")
+    }
+    
+    func testUserDefaults() {
+        UserDefaults.searchedLocation = nil
+        XCTAssertNil(UserDefaults.searchedLocation, "searchedLocation should be nil")
+        UserDefaults.searchedLocation = "London"
+        XCTAssertEqual(UserDefaults.searchedLocation, "London", "searchedLocation is not London")
+        UserDefaults.searchedLocation = nil
+        XCTAssertNil(UserDefaults.searchedLocation, "searchedLocation should be nil")
+    }
+}
 
-    func testPerformanceExample() throws {
-        // This is an example of a performance test case.
-        self.measure {
-            // Put the code you want to measure the time of here.
+class MockForecastRepository: ForecastRepositoryProtocol {
+    func fetchForecast(withQuery query: String) async -> Forecast? {
+        if let filePath = Bundle(for: Self.self).path(forResource: "Forecast", ofType: "json"),
+           let fileContent = try? Data(contentsOf: URL(fileURLWithPath: filePath)),
+           let forecast = try? JSONDecoder().decode(Forecast.self, from: fileContent) {
+            return forecast
+        } else {
+            return nil
         }
     }
+    
+    func fetchForecast(for latitude: Double, longitude: Double) async -> Forecast? {
+        if let filePath = Bundle(for: Self.self).path(forResource: "Forecast", ofType: "json"),
+           let fileContent = try? Data(contentsOf: URL(fileURLWithPath: filePath)),
+           let forecast = try? JSONDecoder().decode(Forecast.self, from: fileContent) {
+            return forecast
+        } else {
+            return nil
+        }
+    }
+}
 
+class MockFailureForecastRepository: ForecastRepositoryProtocol {
+    func fetchForecast(withQuery query: String) async -> Forecast? {
+        nil
+    }
+    
+    func fetchForecast(for latitude: Double, longitude: Double) async -> Forecast? {
+        nil
+    }
 }
